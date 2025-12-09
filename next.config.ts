@@ -5,7 +5,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: '/api/kestra/:path*',
-        destination: 'http://kestra:kestra@localhost:8080/api/v1/:path*', 
+        destination: 'http://localhost:8080/api/v1/:path*', 
       },
     ];
   },

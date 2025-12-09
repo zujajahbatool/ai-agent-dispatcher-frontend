@@ -2,7 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
-const KESTRA_URL = "/api/kestra/executions";
+// ✅ URL mein Namespace aur Size fix hai
+const KESTRA_URL = "/api/kestra/executions?namespace=dev&size=20";
 
 export default function DashboardPage() {
     const [executions, setExecutions] = useState([]);
@@ -13,30 +14,42 @@ export default function DashboardPage() {
     useEffect(() => {
         async function fetchKestraData() {
             try {
-                console.log("Connecting to Kestra...");
-                
-                // ✅ Real API Call
+                console.log("Fetching Kestra Data...");
+
+                // 🔐 CREDENTIALS (Special Encoding for '@' symbol in password)
+                const username = "batoolzujajah@gmail.com";
+                const password = "@Zujajah123";
+                const encodedAuth = btoa(`${username}:${password}`);
+
+                // ✅ API Call
                 const response = await axios.get(KESTRA_URL, {
-                    params: {
-                        namespace: 'dev', // Yeh "400 Error" se bachayega
-                        size: 20          // Latest 20 PRs layega
-                    },
-                    auth: {
-                        username: 'batoolzujajah@gmail.com',
-                        password: '@Zujajah123'
+                    headers: {
+                        'Authorization': `Basic ${encodedAuth}`
                     }
                 });
                 
                 const results = response.data.results || [];
                 
-                // Data Processing Logic
+                // --- Data Processing Logic ---
                 let trivialCount = 0;
                 let complexCount = 0;
                 
                 const processedExecutions = results.map((execution: any) => {
-                    const decision = execution.outputs?.analyze_and_dispatch?.vars?.decision || 'PENDING';
-                    const url = execution.outputs?.analyze_and_dispatch?.vars?.url || '#';
+                    // 🔍 FIX IS HERE: Hum 'vars' ke andar data dhoond rahe hain
+                    // Kestra data ko aksar 'outputs > task_id > vars' mein rakhta hai
+                    const taskOutputs = execution.outputs?.analyze_and_dispatch;
+
+                    // 1. Pehle 'vars' check karo (Most common)
+                    // 2. Phir direct check karo (Backup)
+                    const decision = taskOutputs?.vars?.decision || 
+                                     taskOutputs?.decision || 
+                                     'PENDING';
+
+                    const url = taskOutputs?.vars?.url || 
+                                taskOutputs?.url || 
+                                '#';
                     
+                    // Stats Update
                     if (decision === 'TRIVIAL_SOLVED_BY_AI') trivialCount++;
                     else if (decision === 'COMPLEX_REQUIRES_HUMAN') complexCount++;
 
@@ -46,7 +59,7 @@ export default function DashboardPage() {
                         agentDecision: decision,
                         prUrl: url,
                         executionTime: execution.duration,
-                        status: execution.state,
+                        status: execution.state.current || execution.state,
                     };
                 });
                 
@@ -58,8 +71,8 @@ export default function DashboardPage() {
                 });
 
             } catch (err: any) {
-                console.error("Kestra Connection Failed:", err);
-                setError("Kestra se data nahi mila. Make sure Docker chal raha hai.");
+                console.error("Error fetching data:", err);
+                setError("Data load nahi ho saka. Docker check karein.");
             } finally {
                 setLoading(false);
             }
@@ -74,10 +87,9 @@ export default function DashboardPage() {
         <main className="p-8 min-h-screen bg-gray-50">
             <h1 className="text-3xl font-bold mb-6 text-gray-800">AI Agent Dispatcher Dashboard (Live)</h1>
             
-            {/* Error Message if not connected */}
             {error && (
                 <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-                    <b>Error:</b> {error}
+                    <b>Status:</b> {error}
                 </div>
             )}
 
@@ -91,13 +103,13 @@ export default function DashboardPage() {
                 </div>
             </div>
 
-            {/* Execution Table */}
+            {/* Execution List */}
             <div className="p-4 bg-white border border-gray-300 rounded shadow text-gray-700">
                  <h2 className="font-bold text-lg mb-4">Live Execution List</h2>
                  <ul>
                     {executions.length === 0 ? (
                         <li className="py-2 text-gray-500">
-                            No data found. Kestra UI mein ja kar "Execute" button dabayen taake naya data aaye.
+                            No executions found. Please run a flow in Kestra UI.
                         </li>
                     ) : (
                         executions.map((exec: any) => (
@@ -111,7 +123,9 @@ export default function DashboardPage() {
                                 <span className={`px-3 py-1 rounded-full text-sm font-bold ${
                                     exec.agentDecision === 'TRIVIAL_SOLVED_BY_AI' 
                                     ? 'bg-green-100 text-green-700' 
-                                    : 'bg-yellow-100 text-yellow-700'
+                                    : exec.agentDecision === 'COMPLEX_REQUIRES_HUMAN'
+                                    ? 'bg-yellow-100 text-yellow-700'
+                                    : 'bg-gray-200 text-gray-600'
                                 }`}>
                                     {exec.agentDecision}
                                 </span>
