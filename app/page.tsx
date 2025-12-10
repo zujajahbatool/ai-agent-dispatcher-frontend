@@ -56,14 +56,7 @@ export default function Dashboard() {
       <div className="network-background" />
 
       <main 
-  className="min-h-screen bg-background/70 text-foreground relative z-10"
-  style={{
-    backgroundImage: `url('/formula-bg.png')`,
-    backgroundSize: 'cover',
-    backgroundPosition: 'center',
-    backgroundRepeat: 'no-repeat',
-    backgroundAttachment: 'fixed'
-  }}
+  className="min-h-screen bg-background/70 text-foreground relative z-10 main-with-bg"
 >
         <div className="max-w-7xl mx-auto p-6 lg:p-8">
           {/* Header with title */}
@@ -98,8 +91,7 @@ export default function Dashboard() {
               <CardContent>
                 <div className="flex items-center gap-3">
                   <div
-                    className="w-16 h-16 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform"
-                    style={{ backgroundColor: "#38761d" }}
+                    className="w-16 h-16 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform ai-solved-color-box"
                   >
                     <span className="text-2xl font-bold text-white">{aiSolved}</span>
                   </div>
@@ -120,8 +112,7 @@ export default function Dashboard() {
               <CardContent>
                 <div className="flex items-center gap-3">
                   <div
-                    className="w-16 h-16 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform"
-                    style={{ backgroundColor: "#cc8800" }}
+                    className="w-16 h-16 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform human-needed-color-box"
                   >
                     <span className="text-2xl font-bold text-white">{humanNeeded}</span>
                   </div>
