@@ -79,103 +79,108 @@ export default function Dashboard() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             {/* Total PRs Analyzed Card */}
-            <Card className="bg-blue-900/30 border border-blue-700/50 hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer group backdrop-blur-sm">
-              <CardHeader>
-                <CardDescription className="text-muted-foreground">Total PRs Analyzed</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-5xl font-bold text-primary group-hover:text-blue-300 transition-colors">
-                  {totalPRs}
-                </div>
-              </CardContent>
-            </Card>
+            {/* Total PRs Analyzed Card */}
+<Card className="bg-gradient-to-br from-blue-900/40 to-blue-800/30 border border-blue-600/40 hover:shadow-2xl hover:scale-105 transition-all duration-300 cursor-pointer group backdrop-blur-sm">
+  <CardHeader>
+    <CardDescription className="text-blue-200 font-medium">Total PRs Analyzed</CardDescription>
+  </CardHeader>
+  <CardContent>
+    <div className="text-5xl font-bold text-white group-hover:text-blue-200 transition-colors">
+      {totalPRs}
+    </div>
+  </CardContent>
+</Card>
 
-            {/* AI Solved Card - Green */}
-            <Card className="bg-emerald-900/30 border border-emerald-700/50 hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer group backdrop-blur-sm">
-              <CardHeader>
-                <CardDescription className="text-muted-foreground">AI Solved (TRIVIAL)</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-3">
-                  <div
-                    className="w-16 h-16 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform"
-                    style={{ backgroundColor: "#38761d" }}
-                  >
-                    <span className="text-2xl font-bold text-white">{aiSolved}</span>
-                  </div>
-                  <div>
-                    <div className="text-sm text-muted-foreground">Automated</div>
-                    <div className="text-xs text-green-400">✓ Complete</div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+{/* AI Solved Card - Green */}
+<Card className="bg-gradient-to-br from-emerald-900/40 to-emerald-800/30 border border-emerald-600/40 hover:shadow-2xl hover:scale-105 transition-all duration-300 cursor-pointer group backdrop-blur-sm">
+  <CardHeader>
+    <CardDescription className="text-emerald-200 font-medium">AI Solved (TRIVIAL)</CardDescription>
+  </CardHeader>
+  <CardContent>
+    <div className="flex items-center gap-3">
+      <div
+        className="w-16 h-16 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg"
+        style={{ backgroundColor: "#16a34a" }}
+      >
+        <span className="text-2xl font-bold text-white">{aiSolved}</span>
+      </div>
+      <div>
+        <div className="text-sm text-emerald-100 font-medium">Automated</div>
+        <div className="text-sm text-emerald-300 font-semibold">✓ Complete</div>
+      </div>
+    </div>
+  </CardContent>
+</Card>
 
-            {/* Human Needed Card - Orange */}
-            <Card className="bg-amber-900/30 border border-amber-700/50 hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer group backdrop-blur-sm">
-            
-              <CardHeader>
-                <CardDescription className="text-muted-foreground">Human Needed (COMPLEX)</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-3">
-                  <div
-                    className="w-16 h-16 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform"
-                    style={{ backgroundColor: "#cc8800" }}
-                  >
-                    <span className="text-2xl font-bold text-white">{humanNeeded}</span>
-                  </div>
-                  <div>
-                    <div className="text-sm text-muted-foreground">Review Required</div>
-                    <div className="text-xs text-orange-400">⚠ Pending</div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+{/* Human Needed Card - Orange */}
+<Card className="bg-gradient-to-br from-amber-900/40 to-amber-800/30 border border-amber-600/40 hover:shadow-2xl hover:scale-105 transition-all duration-300 cursor-pointer group backdrop-blur-sm">
+  <CardHeader>
+    <CardDescription className="text-amber-200 font-medium">Human Needed (COMPLEX)</CardDescription>
+  </CardHeader>
+  <CardContent>
+    <div className="flex items-center gap-3">
+      <div
+        className="w-16 h-16 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg"
+        style={{ backgroundColor: "#d97706" }}
+      >
+        <span className="text-2xl font-bold text-white">{humanNeeded}</span>
+      </div>
+      <div>
+        <div className="text-sm text-amber-100 font-medium">Review Required</div>
+        <div className="text-sm text-amber-300 font-semibold">⚠ Pending</div>
+      </div>
+    </div>
+  </CardContent>
+</Card>
           </div>
 
-          {/* Status Indicator */}
-          <div className="flex justify-end mb-6">
-            <div className="flex items-center gap-2 px-4 py-2 bg-card border border-border rounded-full">
-              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-              <span className="text-sm text-muted-foreground">
-                Vercel Deployment: <span className="text-green-400">Ready</span>
-              </span>
-            </div>
-          </div>
+      
+         {/* Status Indicator */}
+<div className="flex justify-end mb-6">
+  <div className="flex items-center gap-3 px-5 py-2.5 bg-gray-900/90 border border-cyan-600/40 rounded-full backdrop-blur-md shadow-xl shadow-cyan-500/10">
+    <div className="relative">
+      <div className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse" />
+      <div className="absolute inset-0 w-3 h-3 rounded-full bg-emerald-500 animate-ping opacity-60"></div>
+    </div>
+    <span className="text-sm font-medium text-white">
+      <span className="text-cyan-200">Vercel Deployment:</span> 
+      <span className="ml-2 text-emerald-300 font-bold text-base">Ready</span>
+    </span>
+  </div>
+</div>
 
           {/* Filter Buttons */}
-          <div className="flex flex-wrap gap-3 mb-6">
-            {[
-              { id: "ALL", label: `ALL (${totalPRs})` },
-              { id: "AI_SOLVED", label: `AI Solved (${aiSolved})` },
-              { id: "HUMAN_NEEDED", label: `Human Needed (${humanNeeded})` },
-              { id: "SOLVED", label: "SOLVED" },
-              { id: "UNSOLVED", label: "UNSOLVED" },
-            ].map((filter) => (
-              <Button
-                key={filter.id}
-                onClick={() => setActiveFilter(filter.id)}
-                className={`rounded-full px-6 transition-all ${
-                  activeFilter === filter.id
-                    ? "bg-primary text-primary-foreground shadow-lg"
-                    : "bg-card border border-border text-foreground hover:bg-muted"
-                }`}
-              >
-                {filter.label}
-              </Button>
-            ))}
-          </div>
+<div className="flex flex-wrap gap-3 mb-6">
+  {[
+    { id: "ALL", label: `ALL (${totalPRs})` },
+    { id: "AI_SOLVED", label: `AI Solved (${aiSolved})` },
+    { id: "HUMAN_NEEDED", label: `Human Needed (${humanNeeded})` },
+    { id: "SOLVED", label: "SOLVED" },
+    { id: "UNSOLVED", label: "UNSOLVED" },
+  ].map((filter) => (
+    <Button
+      key={filter.id}
+      onClick={() => setActiveFilter(filter.id)}
+      className={`rounded-full px-6 transition-all font-medium text-sm md:text-base ${
+        activeFilter === filter.id
+          ? "bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-lg shadow-cyan-500/50 border border-cyan-500"
+          : "bg-gray-900/70 text-gray-200 border border-gray-600 hover:bg-gray-800 hover:text-white hover:border-cyan-500/30"
+      }`}
+    >
+      {filter.label}
+    </Button>
+  ))}
+</div>
 
           {/* Data Table */}
        {/* Data Table - Dark Cyber Theme */}
 <Card className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 border border-cyan-700/30 overflow-hidden shadow-2xl shadow-cyan-500/20 backdrop-blur-sm">
   <CardHeader className="border-b border-cyan-500/20">
     <CardTitle className="text-xl font-bold">
-      <span className="bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">
-        Pull Request Analysis
-      </span>
-    </CardTitle>
+  <span className="bg-gradient-to-r from-cyan-300 to-purple-300 bg-clip-text text-transparent drop-shadow-[0_0_10px_rgba(34,211,238,0.5)]">
+    Pull Request Analysis
+  </span>
+</CardTitle>
   </CardHeader>
   <CardContent>
     <div className="overflow-x-auto">
@@ -253,10 +258,7 @@ export default function Dashboard() {
   Showing <span className="text-white font-bold">{filteredData.length}</span> of <span className="text-white font-bold">{prData.length}</span> pull requests
 </div>
 
-          {/* Results count */}
-          <div className="mt-4 text-sm text-muted-foreground text-right">
-            Showing {filteredData.length} of {prData.length} pull requests
-          </div>
+          
         </div>
       </main>
     </>
