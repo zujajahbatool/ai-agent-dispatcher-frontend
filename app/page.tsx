@@ -1,6 +1,5 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 
 const KESTRA_URL = "/api/kestra/executions?namespace=dev&size=20";
 
@@ -33,17 +32,22 @@ export default function DashboardPage() {
                 setLoading(true);
                 setError("");
 
-                const response = await axios.get(KESTRA_URL);
+                const res = await fetch(KESTRA_URL);
                 
-                console.log("Response received:", response.data);
+                if (!res.ok) {
+                    throw new Error(`HTTP error! status: ${res.status}`);
+                }
                 
-                const results = response.data.results || [];
+                const data = await res.json();
+
+                console.log("Response received:", data);
+
+                const results = data.results || [];
                 
                 if (results.length === 0) {
                     setError("No executions found. Please execute a flow in Kestra UI first.");
                 }
                 
-                // --- Data Processing Logic ---
                 let trivialCount = 0;
                 let complexCount = 0;
                 
@@ -90,14 +94,8 @@ export default function DashboardPage() {
             } catch (err) {
                 console.error("Error fetching data:", err);
                 
-                if (axios.isAxiosError(err)) {
-                    if (err.response) {
-                        setError(`Server Error: ${err.response.status} - ${err.response.data?.error || err.message}`);
-                    } else if (err.request) {
-                        setError("Network Error: Cannot connect to API. Check if server is running.");
-                    } else {
-                        setError(`Error: ${err.message}`);
-                    }
+                if (err instanceof Error) {
+                    setError(`Error: ${err.message}`);
                 } else {
                     setError('An unexpected error occurred');
                 }
@@ -108,7 +106,6 @@ export default function DashboardPage() {
         
         fetchKestraData();
         
-        // Optional: Auto-refresh every 30 seconds
         const interval = setInterval(fetchKestraData, 30000);
         return () => clearInterval(interval);
     }, []);
@@ -157,7 +154,6 @@ export default function DashboardPage() {
                     </div>
                 )}
 
-                {/* KPI Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                     <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-200 hover:shadow-xl transition-shadow">
                         <div className="flex items-center justify-between">
@@ -212,7 +208,6 @@ export default function DashboardPage() {
                     </div>
                 </div>
 
-                {/* Execution List */}
                 <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
                     <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
                         <h2 className="text-xl font-bold text-white flex items-center">
