@@ -1,256 +1,293 @@
+"use client";
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 
-"use client"
+const KESTRA_URL = "/api/kestra/executions?namespace=dev&size=20";
 
-import { useState } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { CheckCircle2, AlertCircle, XCircle, ExternalLink } from "lucide-react"
-
-// Sample PR data
-const prData = [
-  { id: 1, title: "fix: minor typo in readme", status: "Solved", decision: "TRIVIAL", time: "120ms", url: "#" },
-  { id: 2, title: "feat: add user authentication", status: "Unsolved", decision: "COMPLEX", time: "2.5s", url: "#" },
-  { id: 3, title: "chore: update dependencies", status: "Unsolved", decision: "COMPLEX", time: "145ms", url: "#" },
-  { id: 4, title: "refactor: optimize image loading", status: "Failed", decision: "COMPLEX", time: "1.8s", url: "#" },
-  { id: 5, title: "docs: add API documentation", status: "Solved", decision: "TRIVIAL", time: "200ms", url: "#" },
-  { id: 6, title: "feat: dark mode support", status: "Unsolved", decision: "COMPLEX", time: "3.2s", url: "#" },
-]
-
-export default function Dashboard() {
-  const [activeFilter, setActiveFilter] = useState("ALL")
-
-  // Filter data based on active filter
-  const filteredData = prData.filter((pr) => {
-    if (activeFilter === "ALL") return true
-    if (activeFilter === "AI_SOLVED") return pr.decision === "TRIVIAL" && pr.status === "Solved"
-    if (activeFilter === "HUMAN_NEEDED") return pr.decision === "COMPLEX"
-    if (activeFilter === "SOLVED") return pr.status === "Solved"
-    if (activeFilter === "UNSOLVED") return pr.status === "Unsolved"
-    return true
-  })
-
-  // Calculate metrics
-  const totalPRs = prData.length
-  const aiSolved = prData.filter((pr) => pr.decision === "TRIVIAL" && pr.status === "Solved").length
-  const humanNeeded = prData.filter((pr) => pr.decision === "COMPLEX").length
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "Solved":
-        return <CheckCircle2 className="w-5 h-5 text-green-500" />
-      case "Unsolved":
-        return <AlertCircle className="w-5 h-5 text-yellow-500" />
-      case "Failed":
-        return <XCircle className="w-5 h-5 text-red-500" />
-      default:
-        return null
-    }
-  }
-
-  const getDecisionColor = (decision: string) => {
-    return decision === "TRIVIAL" ? "text-blue-400" : "text-orange-400"
-  }
-
-  return (
-    <>
-      <div className="network-background" />
-
-      <main 
-  className="min-h-screen bg-background/70 text-foreground relative z-10 main-with-bg"
->
-        <div className="max-w-7xl mx-auto p-6 lg:p-8">
-          {/* Header with title */}
-          <div className="mb-8">
-  {/* Main Title with gradient */}
-  <h1 className="text-4xl font-bold text-balance bg-gradient-to-r from-blue-400 to-emerald-400 bg-clip-text text-transparent">
-    AI Agent Dispatcher
-  </h1>
-  
-  {/* Subtitle */}
-  <p className="text-gray-300 mt-2">Monitor and analyze Pull Request processing</p>
-</div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            {/* Total PRs Analyzed Card */}
-            <Card className="bg-blue-900/30 border border-blue-700/50 hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer group backdrop-blur-sm">
-              <CardHeader>
-                <CardDescription className="text-muted-foreground">Total PRs Analyzed</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-5xl font-bold text-primary group-hover:text-blue-300 transition-colors">
-                  {totalPRs}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* AI Solved Card - Green */}
-            <Card className="bg-emerald-900/30 border border-emerald-700/50 hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer group backdrop-blur-sm">
-              <CardHeader>
-                <CardDescription className="text-muted-foreground">AI Solved (TRIVIAL)</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-3">
-                  <div
-                    className="w-16 h-16 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform ai-solved-color-box"
-                  >
-                    <span className="text-2xl font-bold text-white">{aiSolved}</span>
-                  </div>
-                  <div>
-                    <div className="text-sm text-muted-foreground">Automated</div>
-                    <div className="text-xs text-green-400">✓ Complete</div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Human Needed Card - Orange */}
-            <Card className="bg-amber-900/30 border border-amber-700/50 hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer group backdrop-blur-sm">
-            
-              <CardHeader>
-                <CardDescription className="text-muted-foreground">Human Needed (COMPLEX)</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-3">
-                  <div
-                    className="w-16 h-16 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform human-needed-color-box"
-                  >
-                    <span className="text-2xl font-bold text-white">{humanNeeded}</span>
-                  </div>
-                  <div>
-                    <div className="text-sm text-muted-foreground">Review Required</div>
-                    <div className="text-xs text-orange-400">⚠ Pending</div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Status Indicator */}
-          <div className="flex justify-end mb-6">
-            <div className="flex items-center gap-2 px-4 py-2 bg-card border border-border rounded-full">
-              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-              <span className="text-sm text-muted-foreground">
-                Vercel Deployment: <span className="text-green-400">Ready</span>
-              </span>
-            </div>
-          </div>
-
-          {/* Filter Buttons */}
-          <div className="flex flex-wrap gap-3 mb-6">
-            {[
-              { id: "ALL", label: `ALL (${totalPRs})` },
-              { id: "AI_SOLVED", label: `AI Solved (${aiSolved})` },
-              { id: "HUMAN_NEEDED", label: `Human Needed (${humanNeeded})` },
-              { id: "SOLVED", label: "SOLVED" },
-              { id: "UNSOLVED", label: "UNSOLVED" },
-            ].map((filter) => (
-              <Button
-                key={filter.id}
-                onClick={() => setActiveFilter(filter.id)}
-                className={`rounded-full px-6 transition-all ${
-                  activeFilter === filter.id
-                    ? "bg-primary text-primary-foreground shadow-lg"
-                    : "bg-card border border-border text-foreground hover:bg-muted"
-                }`}
-              >
-                {filter.label}
-              </Button>
-            ))}
-          </div>
-
-          {/* Data Table */}
-       {/* Data Table - Dark Cyber Theme */}
-<Card className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 border border-cyan-700/30 overflow-hidden shadow-2xl shadow-cyan-500/20 backdrop-blur-sm">
-  <CardHeader className="border-b border-cyan-500/20">
-    <CardTitle className="text-xl font-bold">
-      <span className="bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">
-        Pull Request Analysis
-      </span>
-    </CardTitle>
-  </CardHeader>
-  <CardContent>
-    <div className="overflow-x-auto">
-      <table className="w-full">
-        <thead>
-          <tr className="border-b border-cyan-500/30 bg-gray-800/80">
-            <th className="text-left py-4 px-4 font-semibold text-cyan-300 font-mono text-sm">
-              PR Title
-            </th>
-            <th className="text-left py-4 px-4 font-semibold text-cyan-300 font-mono text-sm">
-              Status
-            </th>
-            <th className="text-left py-4 px-4 font-semibold text-cyan-300 font-mono text-sm">
-              Agent Decision
-            </th>
-            <th className="text-left py-4 px-4 font-semibold text-cyan-300 font-mono text-sm">
-              Execution Time
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {filteredData.map((pr) => (
-            <tr
-              key={pr.id}
-              className="border-b border-gray-700/50 hover:bg-gray-800/60 transition-all duration-200 cursor-pointer group"
-            >
-              <td className="py-4 px-4">
-                <a
-                  href={pr.url}
-                  className="text-gray-200 hover:text-cyan-300 flex items-center gap-2 group-hover:gap-3 transition-all font-mono text-sm"
-                >
-                  <span className="text-cyan-400/70 font-bold">[{pr.id}]</span>
-                  {pr.title}
-                  <ExternalLink className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity text-cyan-400" />
-                </a>
-              </td>
-              <td className="py-4 px-4">
-                <div className="flex items-center gap-2">
-                  {getStatusIcon(pr.status)}
-                  <span className={`text-sm font-mono px-3 py-1 rounded ${
-                    pr.status === "Solved" 
-                      ? "text-emerald-300 bg-emerald-500/10 border border-emerald-500/20" 
-                      : pr.status === "Failed" 
-                      ? "text-red-300 bg-red-500/10 border border-red-500/20" 
-                      : "text-amber-300 bg-amber-500/10 border border-amber-500/20"
-                  }`}>
-                    {pr.status}
-                  </span>
-                </div>
-              </td>
-              <td className="py-4 px-4">
-                <span className={`text-sm font-mono font-bold px-3 py-1.5 rounded-full ${
-                  pr.decision === "TRIVIAL" 
-                    ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30" 
-                    : "bg-purple-500/20 text-purple-300 border border-purple-500/30"
-                }`}>
-                  {pr.decision}
-                </span>
-              </td>
-              <td className="py-4 px-4">
-                <span className="text-sm font-mono text-gray-300 bg-gray-800/80 px-3 py-1.5 rounded border border-gray-700 group-hover:border-cyan-500/30 group-hover:text-cyan-300 transition-all duration-300">
-                  {pr.time}
-                </span>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  </CardContent>
-</Card>
-
-{/* Results count */}
-<div className="mt-4 text-sm font-mono text-cyan-300 text-right bg-gray-900/50 px-4 py-2 rounded inline-block border border-gray-700">
-  Showing <span className="text-white font-bold">{filteredData.length}</span> of <span className="text-white font-bold">{prData.length}</span> pull requests
-</div>
-
-          {/* Results count */}
-          <div className="mt-4 text-sm text-muted-foreground text-right">
-            Showing {filteredData.length} of {prData.length} pull requests
-          </div>
-        </div>
-      </main>
-    </>
-  )
+interface Execution {
+    id: string;
+    title: string;
+    agentDecision: string;
+    prUrl: string;
+    executionTime?: number;
+    status: string;
+    startDate?: string;
 }
 
+interface Counts {
+    trivial: number;
+    complex: number;
+    total: number;
+}
+
+export default function DashboardPage() {
+    const [executions, setExecutions] = useState<Execution[]>([]);
+    const [counts, setCounts] = useState<Counts>({ trivial: 0, complex: 0, total: 0 });
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
+
+    useEffect(() => {
+        async function fetchKestraData() {
+            try {
+                console.log("Fetching Kestra Data from:", KESTRA_URL);
+                setLoading(true);
+                setError("");
+
+                const response = await axios.get(KESTRA_URL);
+                
+                console.log("Response received:", response.data);
+                
+                const results = response.data.results || [];
+                
+                if (results.length === 0) {
+                    setError("No executions found. Please execute a flow in Kestra UI first.");
+                }
+                
+                // --- Data Processing Logic ---
+                let trivialCount = 0;
+                let complexCount = 0;
+                
+                const processedExecutions = results.map((execution: {
+                    id: string;
+                    outputs?: {
+                        analyze_and_dispatch?: {
+                            vars?: {
+                                decision?: string;
+                                url?: string;
+                            };
+                        };
+                    };
+                    duration?: number;
+                    state?: {
+                        current?: string;
+                        startDate?: string;
+                    };
+                }) => {
+                    const decision = execution.outputs?.analyze_and_dispatch?.vars?.decision || 'PENDING';
+                    const url = execution.outputs?.analyze_and_dispatch?.vars?.url || '#';
+                    
+                    if (decision === 'TRIVIAL_SOLVED_BY_AI') trivialCount++;
+                    else if (decision === 'COMPLEX_REQUIRES_HUMAN') complexCount++;
+
+                    return {
+                        id: execution.id,
+                        title: `PR Execution #${execution.id.slice(0, 8)}`,
+                        agentDecision: decision,
+                        prUrl: url,
+                        executionTime: execution.duration,
+                        status: execution.state?.current || 'UNKNOWN',
+                        startDate: execution.state?.startDate,
+                    };
+                });
+                
+                setExecutions(processedExecutions);
+                setCounts({
+                    trivial: trivialCount,
+                    complex: complexCount,
+                    total: results.length,
+                });
+
+            } catch (err) {
+                console.error("Error fetching data:", err);
+                
+                if (axios.isAxiosError(err)) {
+                    if (err.response) {
+                        setError(`Server Error: ${err.response.status} - ${err.response.data?.error || err.message}`);
+                    } else if (err.request) {
+                        setError("Network Error: Cannot connect to API. Check if server is running.");
+                    } else {
+                        setError(`Error: ${err.message}`);
+                    }
+                } else {
+                    setError('An unexpected error occurred');
+                }
+            } finally {
+                setLoading(false);
+            }
+        }
+        
+        fetchKestraData();
+        
+        // Optional: Auto-refresh every 30 seconds
+        const interval = setInterval(fetchKestraData, 30000);
+        return () => clearInterval(interval);
+    }, []);
+
+    if (loading) {
+        return (
+            <div className="p-8 text-center min-h-screen flex items-center justify-center">
+                <div className="text-xl text-gray-600">
+                    <div className="animate-spin h-10 w-10 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+                    Loading Dashboard Data...
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <main className="p-8 min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+            <div className="max-w-7xl mx-auto">
+                <h1 className="text-4xl font-bold mb-2 text-gray-800">
+                    AI Agent Dispatcher Dashboard
+                </h1>
+                <p className="text-gray-600 mb-6">Real-time PR automation monitoring</p>
+                
+                {error && (
+                    <div className="bg-red-50 border-l-4 border-red-500 text-red-800 px-6 py-4 rounded-lg mb-6 shadow-sm">
+                        <div className="flex items-start">
+                            <div className="flex-shrink-0">
+                                <svg className="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                                </svg>
+                            </div>
+                            <div className="ml-3">
+                                <h3 className="font-bold text-lg">Connection Error</h3>
+                                <p className="mt-1">{error}</p>
+                                <div className="mt-3 text-sm">
+                                    <p className="font-semibold">Troubleshooting steps:</p>
+                                    <ul className="list-disc list-inside mt-1 space-y-1">
+                                        <li>Verify Kestra is running: <code className="bg-red-100 px-2 py-1 rounded">docker ps</code></li>
+                                        <li>Check Kestra UI at: <a href="http://localhost:8080" target="_blank" rel="noopener noreferrer" className="underline">http://localhost:8080</a></li>
+                                        <li>Execute a flow in the &quot;dev&quot; namespace</li>
+                                        <li>Check console for detailed error logs</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* KPI Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-200 hover:shadow-xl transition-shadow">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm text-gray-600 font-medium">Total PRs Processed</p>
+                                <p className="text-4xl font-bold text-gray-800 mt-2">{counts.total}</p>
+                            </div>
+                            <div className="bg-blue-100 p-4 rounded-full">
+                                <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-xl shadow-lg border border-green-200 hover:shadow-xl transition-shadow">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm text-green-800 font-medium">AI Solved (Trivial)</p>
+                                <p className="text-4xl font-bold text-green-700 mt-2">{counts.trivial}</p>
+                                {counts.total > 0 && (
+                                    <p className="text-xs text-green-600 mt-1">
+                                        {Math.round((counts.trivial / counts.total) * 100)}% automation rate
+                                    </p>
+                                )}
+                            </div>
+                            <div className="bg-green-200 p-4 rounded-full">
+                                <svg className="w-8 h-8 text-green-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 p-6 rounded-xl shadow-lg border border-yellow-200 hover:shadow-xl transition-shadow">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm text-yellow-800 font-medium">Human Review Needed</p>
+                                <p className="text-4xl font-bold text-yellow-700 mt-2">{counts.complex}</p>
+                                {counts.total > 0 && (
+                                    <p className="text-xs text-yellow-600 mt-1">
+                                        {Math.round((counts.complex / counts.total) * 100)}% require attention
+                                    </p>
+                                )}
+                            </div>
+                            <div className="bg-yellow-200 p-4 rounded-full">
+                                <svg className="w-8 h-8 text-yellow-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Execution List */}
+                <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+                    <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
+                        <h2 className="text-xl font-bold text-white flex items-center">
+                            <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                            </svg>
+                            Recent Executions
+                        </h2>
+                    </div>
+                    
+                    <div className="p-6">
+                        {executions.length === 0 ? (
+                            <div className="text-center py-12 text-gray-500">
+                                <svg className="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                                </svg>
+                                <p className="text-lg font-medium">No executions found</p>
+                                <p className="text-sm mt-2">Execute a flow in Kestra UI to see results here</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-3">
+                                {executions.map((exec) => (
+                                    <div 
+                                        key={exec.id} 
+                                        className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow bg-gray-50"
+                                    >
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex-1">
+                                                <h3 className="font-semibold text-lg text-gray-800">{exec.title}</h3>
+                                                <div className="flex items-center gap-4 mt-2 text-sm">
+                                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full font-medium ${
+                                                        exec.status === 'SUCCESS' 
+                                                        ? 'bg-green-100 text-green-800' 
+                                                        : exec.status === 'RUNNING'
+                                                        ? 'bg-blue-100 text-blue-800'
+                                                        : 'bg-red-100 text-red-800'
+                                                    }`}>
+                                                        <span className={`w-2 h-2 rounded-full mr-1.5 ${
+                                                            exec.status === 'SUCCESS' 
+                                                            ? 'bg-green-500' 
+                                                            : exec.status === 'RUNNING'
+                                                            ? 'bg-blue-500'
+                                                            : 'bg-red-500'
+                                                        }`}></span>
+                                                        {exec.status}
+                                                    </span>
+                                                    {exec.startDate && (
+                                                        <span className="text-gray-600">
+                                                            {new Date(exec.startDate).toLocaleString()}
+                                                        </span>
+                                                    )}
+                                                    {exec.executionTime && (
+                                                        <span className="text-gray-600">
+                                                            Duration: {(exec.executionTime / 1000).toFixed(2)}s
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <span className={`px-4 py-2 rounded-lg text-sm font-bold whitespace-nowrap ${
+                                                exec.agentDecision === 'TRIVIAL_SOLVED_BY_AI' 
+                                                ? 'bg-green-200 text-green-800' 
+                                                : exec.agentDecision === 'COMPLEX_REQUIRES_HUMAN'
+                                                ? 'bg-yellow-200 text-yellow-800'
+                                                : 'bg-gray-200 text-gray-700'
+                                            }`}>
+                                                {exec.agentDecision.replace(/_/g, ' ')}
+                                            </span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+        </main>
+    );
+}
