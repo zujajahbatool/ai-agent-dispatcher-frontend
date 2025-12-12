@@ -22,7 +22,8 @@ export default function RealConnectionStatus() {
     const fetchStatus = async () => {
       try {
         // Connect to your real backend
-        const response = await fetch('http://localhost:8080/api/v1/executions?namespace=dev&size=1');
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+        const response = await fetch(`${apiUrl}/api/v1/executions?namespace=dev&size=1`);
         const data = await response.json();
         
         setStatus({

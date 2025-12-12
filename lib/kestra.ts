@@ -2,7 +2,7 @@
  * API client for Kestra backend
  */
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || process.env.KESTRA_URL || 'http://localhost:8080';
 
 export interface KestraFlow {
   id: string;

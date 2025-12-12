@@ -11,13 +11,14 @@ export async function GET(request: NextRequest) {
         // Kestra credentials
         const username = process.env.KESTRA_USERNAME;
         const password = process.env.KESTRA_PASSWORD;
+        const kestraBaseUrl = process.env.KESTRA_URL || 'http://localhost:8080';
         if (!username || !password) {
             return NextResponse.json({ error: 'Kestra credentials not configured' }, { status: 500 });
         }
         const encodedAuth = Buffer.from(`${username}:${password}`).toString('base64');
 
         // Use the correct endpoint with flowId
-        const kestraUrl = `http://localhost:8080/api/v1/executions?namespace=${namespace}&flowId=${flowId}&size=${size}`;
+        const kestraUrl = `${kestraBaseUrl}/api/v1/executions?namespace=${namespace}&flowId=${flowId}&size=${size}`;
 
         console.log('Fetching from Kestra:', kestraUrl);
 
