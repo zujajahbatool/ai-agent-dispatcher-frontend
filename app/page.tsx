@@ -32,7 +32,11 @@ export default function DashboardPage() {
                 setLoading(true);
                 setError("");
 
-                const res = await fetch(KESTRA_URL);
+                const res = await fetch(KESTRA_URL, {
+                    headers: {
+                        "ngrok-skip-browser-warning": "true", 
+                    }
+                });
                 
                 if (!res.ok) {
                     throw new Error(`HTTP error! status: ${res.status}`);
