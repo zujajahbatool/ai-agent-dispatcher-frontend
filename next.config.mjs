@@ -4,7 +4,7 @@ const nextConfig = {
     appIsrStatus: false,
   },
   turbopack: {
-    root: __dirname,
+    root: process.cwd(),
   },
 };
 
