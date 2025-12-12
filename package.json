@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
@@ -29,9 +29,9 @@
     "clsx": "^2.1.1",
     "cmdk": "^0.2.0",
     "lucide-react": "^0.468.0",
-
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
+    "next": "^14.2.26",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
     "react-hook-form": "^7.54.2",
     "tailwind-merge": "^2.6.0",
     "tailwindcss-animate": "^1.0.7",
