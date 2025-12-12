@@ -9,9 +9,9 @@ export async function GET(request: NextRequest) {
         const size = searchParams.get('size') || '20';
 
         // Kestra credentials
-        const username = process.env.KESTRA_USERNAME;
-        const password = process.env.KESTRA_PASSWORD;
-        const kestraBaseUrl = process.env.KESTRA_URL || 'http://localhost:8080';
+        const username = process.env.NEXT_PUBLIC_KESTRA_USERNAME;
+        const password = process.env.NEXT_PUBLIC_KESTRA_PASSWORD;
+        const kestraBaseUrl = process.env.NEXT_PUBLIC_KESTRA_URL || process.env.KESTRA_URL || 'http://localhost:8080';
         if (!username || !password) {
             return NextResponse.json({ error: 'Kestra credentials not configured' }, { status: 500 });
         }

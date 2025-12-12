@@ -1,7 +1,9 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 
-const KESTRA_URL = "https://sue-nonretiring-rubbly.ngrok-free.dev/api/v1/executions?namespace=dev&size=20";
+// Construct the full API endpoint dynamically
+// If the base URL is missing, we leave this empty and handle it in the useEffect
+const KESTRA_API_ENDPOINT = "/api/kestra/executions?namespace=dev&size=20";
 
 interface Execution {
     id: string;
@@ -28,13 +30,16 @@ export default function DashboardPage() {
     useEffect(() => {
         async function fetchKestraData() {
             try {
-                console.log("Fetching Kestra Data from:", KESTRA_URL);
-                setLoading(true);
+                console.log("Fetching Kestra Data from:", KESTRA_API_ENDPOINT);
+                // Don't reset loading to true on every poll to prevent UI flickering
+                // Only set it on the initial load if data is empty
+                if (executions.length === 0) setLoading(true);
+                
                 setError("");
 
-                // Header already added here (Good job!)
-                const res = await fetch(KESTRA_URL, {
+                const res = await fetch(KESTRA_API_ENDPOINT, {
                     headers: {
+                        // This header is critical for Ngrok calls
                         "ngrok-skip-browser-warning": "true", 
                     }
                 });
@@ -50,7 +55,8 @@ export default function DashboardPage() {
                 const results = data.results || [];
                 
                 if (results.length === 0) {
-                    setError("No executions found. Please execute a flow in Kestra UI first.");
+                    // It's not necessarily an error, just empty state
+                    // We keep the error empty so the dashboard shows 0 counts nicely
                 }
                 
                 let trivialCount = 0;
@@ -100,7 +106,7 @@ export default function DashboardPage() {
                 console.error("Error fetching data:", err);
                 
                 if (err instanceof Error) {
-                    setError(`Error: ${err.message}`);
+                    setError(`Connection Error: ${err.message}`);
                 } else {
                     setError('An unexpected error occurred');
                 }
@@ -111,16 +117,17 @@ export default function DashboardPage() {
         
         fetchKestraData();
         
-        const interval = setInterval(fetchKestraData, 30000);
+        // Poll every 5 seconds for real-time updates
+        const interval = setInterval(fetchKestraData, 5000);
         return () => clearInterval(interval);
-    }, []);
+    }, []); // Removed 'executions.length' from dependency array to avoid loop logic issues
 
     if (loading) {
         return (
             <div className="p-8 text-center min-h-screen flex items-center justify-center">
                 <div className="text-xl text-gray-600">
                     <div className="animate-spin h-10 w-10 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-                    Loading Dashboard Data...
+                    Connecting to AI Dispatcher...
                 </div>
             </div>
         );
@@ -148,10 +155,9 @@ export default function DashboardPage() {
                                 <div className="mt-3 text-sm">
                                     <p className="font-semibold">Troubleshooting steps:</p>
                                     <ul className="list-disc list-inside mt-1 space-y-1">
-                                        <li>Verify Kestra is running: <code className="bg-red-100 px-2 py-1 rounded">docker ps</code></li>
-                                        <li>Check Kestra UI at: <a href="http://localhost:8080" target="_blank" rel="noopener noreferrer" className="underline">http://localhost:8080</a></li>
-                                        <li>Execute a flow in the &quot;dev&quot; namespace</li>
-                                        <li>Check console for detailed error logs</li>
+                                        <li>Check if <strong>NEXT_PUBLIC_KESTRA_URL</strong> is set in <code>.env.local</code></li>
+                                        <li>Ensure Ngrok is running and the URL in .env matches the terminal</li>
+                                        <li>Restart the Next.js server after changing .env file</li>
                                     </ul>
                                 </div>
                             </div>
