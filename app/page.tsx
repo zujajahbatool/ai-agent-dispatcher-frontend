@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 
 const KESTRA_URL = "/api/kestra/executions?namespace=dev&size=20";
 
+
 interface Execution {
     id: string;
     title: string;
@@ -11,6 +12,7 @@ interface Execution {
     executionTime?: number;
     status: string;
     startDate?: string;
+
 }
 
 interface Counts {
