@@ -1,8 +1,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 
-const KESTRA_URL = "/api/kestra/executions?namespace=dev&size=20";
-
+const KESTRA_URL = "https://sue-nonretiring-rubbly.ngrok-free.dev/api/v1/executions?namespace=dev&size=20";
 
 interface Execution {
     id: string;
@@ -12,7 +11,6 @@ interface Execution {
     executionTime?: number;
     status: string;
     startDate?: string;
-
 }
 
 interface Counts {
@@ -34,6 +32,7 @@ export default function DashboardPage() {
                 setLoading(true);
                 setError("");
 
+                // Header already added here (Good job!)
                 const res = await fetch(KESTRA_URL, {
                     headers: {
                         "ngrok-skip-browser-warning": "true", 
