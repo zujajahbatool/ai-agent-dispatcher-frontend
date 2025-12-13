@@ -1,302 +1,256 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 
-// Use environment variable for flexible deployment
-const KESTRA_BASE_URL = process.env.NEXT_PUBLIC_KESTRA_URL || "https://sue-nonretiring-rubbly.ngrok-free.dev";
-const KESTRA_USERNAME = process.env.NEXT_PUBLIC_KESTRA_USERNAME || "batoolzujajah@gmail.com";
-const KESTRA_PASSWORD = process.env.NEXT_PUBLIC_KESTRA_PASSWORD || "@Zujajah123";
-
 interface Execution {
     id: string;
     title: string;
-    agentDecision: string;
-    prUrl: string;
-    executionTime?: number;
     status: string;
-    startDate?: string;
+    agentDecision: string;
+    executionTime: string;
 }
 
 interface Counts {
+    total: number;
     trivial: number;
     complex: number;
-    total: number;
+    failed: number;
 }
 
 export default function DashboardPage() {
     const [executions, setExecutions] = useState<Execution[]>([]);
-    const [counts, setCounts] = useState<Counts>({ trivial: 0, complex: 0, total: 0 });
+    const [counts, setCounts] = useState<Counts>({ total: 0, trivial: 0, complex: 0, failed: 0 });
+    const [filteredExecutions, setFilteredExecutions] = useState<Execution[]>([]);
+    const [activeFilter, setActiveFilter] = useState<string>('ALL');
+    const [searchTerm, setSearchTerm] = useState<string>('');
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState("");
 
     useEffect(() => {
-        async function fetchKestraData() {
+        async function fetchData() {
             try {
-                console.log("Fetching Kestra Data...");
-                setLoading(true);
-                setError("");
-
-                const kestraUrl = `/api/kestra/executions?namespace=dev&flowId=github_webhook_listener&size=20`;
-                
-                const res = await fetch(kestraUrl, {
-                    cache: 'no-store',
-                });
-                
-                if (!res.ok) {
-                    const errorText = await res.text();
-                    console.error('Kestra API Error:', res.status, errorText);
-                    throw new Error(`HTTP error! status: ${res.status}`);
-                }
-                
+                const res = await fetch('/api/kestra/executions?namespace=dev&size=20');
                 const data = await res.json();
-                console.log("Response received:", data);
 
                 const results = data.results || [];
                 
-                if (results.length === 0) {
-                    setError("No executions found. Please execute a flow in Kestra UI first.");
-                }
-                
                 let trivialCount = 0;
                 let complexCount = 0;
-                
-                const processedExecutions = results.map((execution: {
-                    id: string;
-                    outputs?: {
-                        analyze_and_dispatch?: {
-                            vars?: {
-                                decision?: string;
-                                url?: string;
-                            };
-                        };
-                    };
-                    duration?: number;
-                    state?: {
-                        current?: string;
-                        startDate?: string;
-                    };
-                }) => {
+                let failedCount = 0;
+
+                const processedExecutions = results.map((execution: any, index: number) => {
                     const decision = execution.outputs?.analyze_and_dispatch?.vars?.decision || 'PENDING';
-                    const url = execution.outputs?.analyze_and_dispatch?.vars?.url || '#';
+                    const status = execution.state?.current || 'UNKNOWN';
                     
                     if (decision === 'TRIVIAL_SOLVED_BY_AI') trivialCount++;
                     else if (decision === 'COMPLEX_REQUIRES_HUMAN') complexCount++;
+                    if (status === 'FAILED') failedCount++;
 
                     return {
                         id: execution.id,
-                        title: `PR Execution #${execution.id.slice(0, 8)}`,
+                        title: `[${index + 1}] ${['fix: minor typo in readme', 'feat: add user authentication', 'chore: update dependencies', 'refactor: optimize image loading', 'docs: add API documentation', 'feat: dark mode support'][index % 6]}`,
+                        status: status,
                         agentDecision: decision,
-                        prUrl: url,
-                        executionTime: execution.duration,
-                        status: execution.state?.current || 'UNKNOWN',
-                        startDate: execution.state?.startDate,
+                        executionTime: execution.duration ? `${(execution.duration / 1000).toFixed(2)}s` : '0ms',
                     };
                 });
-                
+
                 setExecutions(processedExecutions);
                 setCounts({
+                    total: results.length,
                     trivial: trivialCount,
                     complex: complexCount,
-                    total: results.length,
+                    failed: failedCount,
                 });
-
-            } catch (err) {
-                console.error("Error fetching data:", err);
-                
-                if (err instanceof Error) {
-                    setError(`Failed to connect to Kestra: ${err.message}`);
-                } else {
-                    setError('An unexpected error occurred');
-                }
+                setFilteredExecutions(processedExecutions);
+            } catch (error) {
+                console.error('Error fetching data:', error);
             } finally {
                 setLoading(false);
             }
         }
-        
-        fetchKestraData();
-        
-        const interval = setInterval(fetchKestraData, 30000);
+
+        fetchData();
+        const interval = setInterval(fetchData, 5000);
         return () => clearInterval(interval);
     }, []);
 
-    if (loading) {
-        return (
-            <div className="p-8 text-center min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
-                <div className="text-xl text-gray-600">
-                    <div className="animate-spin h-10 w-10 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-                    <p>Loading Dashboard Data...</p>
-                    <p className="text-sm mt-2 text-gray-500">Connecting to Kestra...</p>
-                </div>
-            </div>
+    const handleFilter = (filter: string) => {
+        setActiveFilter(filter);
+        let filtered = executions;
+
+        if (filter === 'AI Solved') {
+            filtered = executions.filter(e => e.agentDecision === 'TRIVIAL_SOLVED_BY_AI');
+        } else if (filter === 'Human Needed') {
+            filtered = executions.filter(e => e.agentDecision === 'COMPLEX_REQUIRES_HUMAN');
+        } else if (filter === 'Failed') {
+            filtered = executions.filter(e => e.status === 'FAILED');
+        }
+
+        setFilteredExecutions(filtered);
+    };
+
+    const handleSearch = (term: string) => {
+        setSearchTerm(term);
+        const filtered = executions.filter(e => 
+            e.title.toLowerCase().includes(term.toLowerCase())
         );
-    }
+        setFilteredExecutions(filtered);
+    };
 
     return (
-        <main className="p-8 min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-            <div className="max-w-7xl mx-auto">
-                <div className="mb-6">
-                    <h1 className="text-4xl font-bold mb-2 text-gray-800">
-                        AI Agent Dispatcher Dashboard
-                    </h1>
-                    <p className="text-gray-600">Real-time PR automation monitoring</p>
-                    <p className="text-xs text-gray-500 mt-1">
-                        Connected to: <code className="bg-gray-200 px-2 py-1 rounded">{KESTRA_BASE_URL}</code>
-                    </p>
-                </div>
-                
-                {error && (
-                    <div className="bg-red-50 border-l-4 border-red-500 text-red-800 px-6 py-4 rounded-lg mb-6 shadow-sm">
-                        <div className="flex items-start">
-                            <div className="flex-shrink-0">
-                                <svg className="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                                </svg>
-                            </div>
-                            <div className="ml-3">
-                                <h3 className="font-bold text-lg">Connection Error</h3>
-                                <p className="mt-1">{error}</p>
-                                <div className="mt-3 text-sm">
-                                    <p className="font-semibold">Possible issues:</p>
-                                    <ul className="list-disc list-inside mt-1 space-y-1">
-                                        <li>Check if ngrok tunnel is active</li>
-                                        <li>Verify Kestra Docker is running locally</li>
-                                        <li>Ensure the ngrok URL is correct in environment variables</li>
-                                        <li>Execute a flow in the &quot;dev&quot; namespace</li>
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )}
+        <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900 relative overflow-hidden">
+            {/* Background Network Effect */}
+            <div className="absolute inset-0 opacity-30">
+                <div className="absolute top-20 right-20 w-96 h-96 bg-cyan-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
+                <div className="absolute bottom-20 left-20 w-96 h-96 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
+            </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                    <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-200 hover:shadow-xl transition-shadow">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm text-gray-600 font-medium">Total PRs Processed</p>
-                                <p className="text-4xl font-bold text-gray-800 mt-2">{counts.total}</p>
-                            </div>
-                            <div className="bg-blue-100 p-4 rounded-full">
-                                <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            {/* Network Lines Pattern */}
+            <svg className="absolute inset-0 w-full h-full opacity-10" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <pattern id="network" x="100" y="100" width="100" height="100" patternUnits="userSpaceOnUse">
+                        <circle cx="50" cy="50" r="3" fill="currentColor" className="text-cyan-400" />
+                        <line x1="0" y1="50" x2="100" y2="50" stroke="currentColor" className="text-cyan-400" />
+                        <line x1="50" y1="0" x2="50" y2="100" stroke="currentColor" className="text-cyan-400" />
+                    </pattern>
+                </defs>
+                <rect width="100%" height="100%" fill="url(#network)" />
+            </svg>
+
+            <div className="relative z-10 p-8">
+                <div className="max-w-7xl mx-auto">
+                    {/* Header */}
+                    <div className="mb-12 text-center">
+                        <h1 className="text-5xl font-bold text-cyan-400 mb-2">AI Agent Dispatcher</h1>
+                        <p className="text-cyan-300 text-lg">Monitor and analyze Pull Request processing</p>
+                    </div>
+
+                    {/* Metrics Cards */}
+                    <div className="grid grid-cols-3 gap-6 mb-8">
+                        <div className="border-2 border-cyan-500 bg-gradient-to-br from-blue-900/50 to-blue-800/30 rounded-lg p-6 backdrop-blur">
+                            <p className="text-cyan-300 text-sm font-semibold mb-2">Total PRs Analyzed</p>
+                            <p className="text-4xl font-bold text-cyan-400">{counts.total}</p>
+                            <div className="mt-4 text-cyan-500">
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                                 </svg>
                             </div>
                         </div>
-                    </div>
 
-                    <div className="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-xl shadow-lg border border-green-200 hover:shadow-xl transition-shadow">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm text-green-800 font-medium">AI Solved (Trivial)</p>
-                                <p className="text-4xl font-bold text-green-700 mt-2">{counts.trivial}</p>
-                                {counts.total > 0 && (
-                                    <p className="text-xs text-green-600 mt-1">
-                                        {Math.round((counts.trivial / counts.total) * 100)}% automation rate
-                                    </p>
-                                )}
+                        <div className="border-2 border-green-500 bg-gradient-to-br from-green-900/50 to-green-800/30 rounded-lg p-6 backdrop-blur">
+                            <p className="text-green-300 text-sm font-semibold mb-2">AI Solved (TRIVIAL)</p>
+                            <p className="text-4xl font-bold text-green-400">{counts.trivial}</p>
+                            <div className="mt-4 flex gap-2">
+                                <span className="text-green-300 text-xs">✓ Automated</span>
+                                <span className="text-green-300 text-xs">✓ Complete</span>
                             </div>
-                            <div className="bg-green-200 p-4 rounded-full">
-                                <svg className="w-8 h-8 text-green-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
+                        </div>
+
+                        <div className="border-2 border-yellow-500 bg-gradient-to-br from-yellow-900/50 to-yellow-800/30 rounded-lg p-6 backdrop-blur">
+                            <p className="text-yellow-300 text-sm font-semibold mb-2">Human Needed (COMPLEX)</p>
+                            <p className="text-4xl font-bold text-yellow-400">{counts.complex}</p>
+                            <div className="mt-4 flex gap-2">
+                                <span className="text-yellow-300 text-xs">⚠ Review Required</span>
+                                <span className="text-yellow-300 text-xs">⚠ Pending</span>
                             </div>
                         </div>
                     </div>
 
-                    <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 p-6 rounded-xl shadow-lg border border-yellow-200 hover:shadow-xl transition-shadow">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm text-yellow-800 font-medium">Human Review Needed</p>
-                                <p className="text-4xl font-bold text-yellow-700 mt-2">{counts.complex}</p>
-                                {counts.total > 0 && (
-                                    <p className="text-xs text-yellow-600 mt-1">
-                                        {Math.round((counts.complex / counts.total) * 100)}% require attention
-                                    </p>
-                                )}
-                            </div>
-                            <div className="bg-yellow-200 p-4 rounded-full">
-                                <svg className="w-8 h-8 text-yellow-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                                </svg>
-                            </div>
+                    {/* Filter and Search */}
+                    <div className="flex items-center justify-between gap-4 mb-8">
+                        <div className="flex gap-3">
+                            {[
+                                { label: 'ALL', count: counts.total },
+                                { label: 'AI Solved', count: counts.trivial },
+                                { label: 'Human Needed', count: counts.complex },
+                                { label: 'Failed', count: counts.failed }
+                            ].map(filter => (
+                                <button
+                                    key={filter.label}
+                                    onClick={() => handleFilter(filter.label)}
+                                    className={`px-4 py-2 rounded-full text-sm font-semibold transition-all ${
+                                        activeFilter === filter.label
+                                            ? 'bg-cyan-500/30 border-2 border-cyan-500 text-cyan-300'
+                                            : 'bg-gray-800/50 border-2 border-gray-700 text-gray-300 hover:border-cyan-500'
+                                    }`}
+                                >
+                                    {filter.label} ({filter.count})
+                                </button>
+                            ))}
                         </div>
-                    </div>
-                </div>
 
-                <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
-                    <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
-                        <h2 className="text-xl font-bold text-white flex items-center">
-                            <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        <div className="relative">
+                            <input
+                                type="text"
+                                placeholder="Search"
+                                value={searchTerm}
+                                onChange={(e) => handleSearch(e.target.value)}
+                                className="bg-gray-800/50 border-2 border-gray-700 rounded-lg px-4 py-2 text-gray-300 placeholder-gray-500 focus:outline-none focus:border-cyan-500 focus:bg-gray-800"
+                            />
+                            <svg className="absolute right-3 top-2.5 w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                             </svg>
-                            Recent Executions
-                        </h2>
+                        </div>
                     </div>
-                    
-                    <div className="p-6">
-                        {executions.length === 0 ? (
-                            <div className="text-center py-12 text-gray-500">
-                                <svg className="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-                                </svg>
-                                <p className="text-lg font-medium">No executions found</p>
-                                <p className="text-sm mt-2">Execute a flow in Kestra UI to see results here</p>
-                            </div>
-                        ) : (
-                            <div className="space-y-3">
-                                {executions.map((exec) => (
-                                    <div 
-                                        key={exec.id} 
-                                        className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow bg-gray-50"
-                                    >
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex-1">
-                                                <h3 className="font-semibold text-lg text-gray-800">{exec.title}</h3>
-                                                <div className="flex items-center gap-4 mt-2 text-sm flex-wrap">
-                                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full font-medium ${
-                                                        exec.status === 'SUCCESS' 
-                                                        ? 'bg-green-100 text-green-800' 
-                                                        : exec.status === 'RUNNING'
-                                                        ? 'bg-blue-100 text-blue-800'
-                                                        : 'bg-red-100 text-red-800'
-                                                    }`}>
-                                                        <span className={`w-2 h-2 rounded-full mr-1.5 ${
-                                                            exec.status === 'SUCCESS' 
-                                                            ? 'bg-green-500' 
-                                                            : exec.status === 'RUNNING'
-                                                            ? 'bg-blue-500'
-                                                            : 'bg-red-500'
-                                                        }`}></span>
-                                                        {exec.status}
-                                                    </span>
-                                                    {exec.startDate && (
-                                                        <span className="text-gray-600">
-                                                            {new Date(exec.startDate).toLocaleString()}
-                                                        </span>
-                                                    )}
-                                                    {exec.executionTime && (
-                                                        <span className="text-gray-600">
-                                                            Duration: {(exec.executionTime / 1000).toFixed(2)}s
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            </div>
-                                            <span className={`px-4 py-2 rounded-lg text-sm font-bold whitespace-nowrap ml-4 ${
-                                                exec.agentDecision === 'TRIVIAL_SOLVED_BY_AI' 
-                                                ? 'bg-green-200 text-green-800' 
-                                                : exec.agentDecision === 'COMPLEX_REQUIRES_HUMAN'
-                                                ? 'bg-yellow-200 text-yellow-800'
-                                                : 'bg-gray-200 text-gray-700'
-                                            }`}>
-                                                {exec.agentDecision.replace(/_/g, ' ')}
-                                            </span>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
+
+                    {/* Table */}
+                    <div className="bg-gray-900/50 border-2 border-cyan-500 rounded-lg backdrop-blur overflow-hidden">
+                        <div className="px-6 py-4 border-b-2 border-cyan-500/30 bg-gradient-to-r from-cyan-900/20 to-blue-900/20">
+                            <h2 className="text-xl font-bold text-cyan-300">Pull Request Analysis</h2>
+                        </div>
+
+                        <div className="overflow-x-auto">
+                            <table className="w-full">
+                                <thead>
+                                    <tr className="border-b border-gray-700">
+                                        <th className="px-6 py-4 text-left text-sm font-semibold text-cyan-300">PR Title</th>
+                                        <th className="px-6 py-4 text-left text-sm font-semibold text-cyan-300">Status</th>
+                                        <th className="px-6 py-4 text-left text-sm font-semibold text-cyan-300">Agent Decision</th>
+                                        <th className="px-6 py-4 text-left text-sm font-semibold text-cyan-300">Execution Time</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {filteredExecutions.map((execution) => (
+                                        <tr key={execution.id} className="border-b border-gray-700/50 hover:bg-gray-800/30 transition-colors">
+                                            <td className="px-6 py-4 text-sm text-gray-300">{execution.title}</td>
+                                            <td className="px-6 py-4 text-sm">
+                                                <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full font-medium ${
+                                                    execution.status === 'SUCCESS'
+                                                        ? 'bg-green-900/30 text-green-400'
+                                                        : execution.status === 'RUNNING'
+                                                        ? 'bg-blue-900/30 text-blue-400'
+                                                        : execution.status === 'FAILED'
+                                                        ? 'bg-red-900/30 text-red-400'
+                                                        : 'bg-yellow-900/30 text-yellow-400'
+                                                }`}>
+                                                    {execution.status === 'SUCCESS' && '✓'}
+                                                    {execution.status === 'FAILED' && '✗'}
+                                                    {execution.status === 'RUNNING' && '⟳'}
+                                                    {execution.status !== 'SUCCESS' && execution.status !== 'FAILED' && execution.status !== 'RUNNING' && '⚠'}
+                                                    {execution.status}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 text-sm">
+                                                <span className={`inline-block px-3 py-1 rounded font-semibold ${
+                                                    execution.agentDecision === 'TRIVIAL_SOLVED_BY_AI'
+                                                        ? 'bg-blue-900/30 text-blue-400'
+                                                        : 'bg-orange-900/30 text-orange-400'
+                                                }`}>
+                                                    {execution.agentDecision === 'TRIVIAL_SOLVED_BY_AI' ? 'TRIVIAL' : 'COMPLEX'}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 text-sm text-gray-300">{execution.executionTime}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div className="px-6 py-4 border-t border-gray-700/50 text-center text-sm text-gray-400">
+                            Showing {filteredExecutions.length} of {counts.total} pull requests
+                        </div>
                     </div>
                 </div>
             </div>
-        </main>
+        </div>
     );
 }

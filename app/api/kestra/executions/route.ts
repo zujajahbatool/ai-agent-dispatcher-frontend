@@ -22,30 +22,105 @@ export async function GET(request: NextRequest) {
 
         console.log('Fetching from Kestra:', kestraUrl);
 
-        const response = await fetch(kestraUrl, {
-            method: 'GET',
-            headers: {
-                'Authorization': `Basic ${encodedAuth}`,
-                'Content-Type': 'application/json',
-            },
-            cache: 'no-store',
-        });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('Kestra API Error:', response.status, errorText);
-            return NextResponse.json(
-                { 
-                    error: `Kestra API returned ${response.status}`,
-                    details: errorText 
+        // Mock data for demonstration
+        const mockData = {
+            results: [
+                {
+                    id: 'exec-1',
+                    namespace: 'dev',
+                    flowId: 'github_webhook_listener',
+                    state: { current: 'SUCCESS' },
+                    outputs: {
+                        analyze_and_dispatch: {
+                            vars: {
+                                decision: 'TRIVIAL_SOLVED_BY_AI',
+                                url: 'https://github.com/example/repo/pull/1'
+                            }
+                        }
+                    },
+                    duration: 120000,
                 },
-                { status: response.status }
-            );
-        }
+                {
+                    id: 'exec-2',
+                    namespace: 'dev',
+                    flowId: 'github_webhook_listener',
+                    state: { current: 'RUNNING' },
+                    outputs: {
+                        analyze_and_dispatch: {
+                            vars: {
+                                decision: 'COMPLEX_REQUIRES_HUMAN',
+                                url: 'https://github.com/example/repo/pull/2'
+                            }
+                        }
+                    },
+                    duration: 2500,
+                },
+                {
+                    id: 'exec-3',
+                    namespace: 'dev',
+                    flowId: 'github_webhook_listener',
+                    state: { current: 'RUNNING' },
+                    outputs: {
+                        analyze_and_dispatch: {
+                            vars: {
+                                decision: 'COMPLEX_REQUIRES_HUMAN',
+                                url: 'https://github.com/example/repo/pull/3'
+                            }
+                        }
+                    },
+                    duration: 145000,
+                },
+                {
+                    id: 'exec-4',
+                    namespace: 'dev',
+                    flowId: 'github_webhook_listener',
+                    state: { current: 'FAILED' },
+                    outputs: {
+                        analyze_and_dispatch: {
+                            vars: {
+                                decision: 'COMPLEX_REQUIRES_HUMAN',
+                                url: 'https://github.com/example/repo/pull/4'
+                            }
+                        }
+                    },
+                    duration: 1800000,
+                },
+                {
+                    id: 'exec-5',
+                    namespace: 'dev',
+                    flowId: 'github_webhook_listener',
+                    state: { current: 'SUCCESS' },
+                    outputs: {
+                        analyze_and_dispatch: {
+                            vars: {
+                                decision: 'TRIVIAL_SOLVED_BY_AI',
+                                url: 'https://github.com/example/repo/pull/5'
+                            }
+                        }
+                    },
+                    duration: 280000,
+                },
+                {
+                    id: 'exec-6',
+                    namespace: 'dev',
+                    flowId: 'github_webhook_listener',
+                    state: { current: 'RUNNING' },
+                    outputs: {
+                        analyze_and_dispatch: {
+                            vars: {
+                                decision: 'COMPLEX_REQUIRES_HUMAN',
+                                url: 'https://github.com/example/repo/pull/6'
+                            }
+                        }
+                    },
+                    duration: 3200,
+                }
+            ],
+            total: 6
+        };
 
-        const data = await response.json();
-        console.log('✅ Success! Retrieved', data.results?.length || 0, 'executions');
-        return NextResponse.json(data);
+        console.log('✅ Success! Retrieved', mockData.results.length, 'executions');
+        return NextResponse.json(mockData);
 
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
