@@ -36,6 +36,15 @@ export default function DashboardPage() {
                 let complexCount = 0;
                 let failedCount = 0;
 
+                const prTitles = [
+                    'fix: minor typo in readme',
+                    'feat: add user authentication',
+                    'chore: update dependencies',
+                    'refactor: optimize image loading',
+                    'docs: add API documentation',
+                    'feat: dark mode support'
+                ];
+
                 const processedExecutions = results.map((execution: any, index: number) => {
                     const decision = execution.outputs?.analyze_and_dispatch?.vars?.decision || 'PENDING';
                     const status = execution.state?.current || 'UNKNOWN';
@@ -46,10 +55,10 @@ export default function DashboardPage() {
 
                     return {
                         id: execution.id,
-                        title: `[${index + 1}] ${['fix: minor typo in readme', 'feat: add user authentication', 'chore: update dependencies', 'refactor: optimize image loading', 'docs: add API documentation', 'feat: dark mode support'][index % 6]}`,
+                        title: `[${index + 1}] ${prTitles[index % 6]}`,
                         status: status,
                         agentDecision: decision,
-                        executionTime: execution.duration ? `${(execution.duration / 1000).toFixed(2)}s` : '0ms',
+                        executionTime: execution.duration ? `${execution.duration}ms` : '0ms',
                     };
                 });
 
@@ -213,27 +222,27 @@ export default function DashboardPage() {
                                         <tr key={execution.id} className="border-b border-gray-700/50 hover:bg-gray-800/30 transition-colors">
                                             <td className="px-6 py-4 text-sm text-gray-300">{execution.title}</td>
                                             <td className="px-6 py-4 text-sm">
-                                                <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full font-medium ${
+                                                <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full font-semibold ${
                                                     execution.status === 'SUCCESS'
-                                                        ? 'bg-green-900/30 text-green-400'
+                                                        ? 'bg-green-900/40 text-green-400 border border-green-500/50'
                                                         : execution.status === 'RUNNING'
-                                                        ? 'bg-blue-900/30 text-blue-400'
+                                                        ? 'bg-yellow-900/40 text-yellow-400 border border-yellow-500/50'
                                                         : execution.status === 'FAILED'
-                                                        ? 'bg-red-900/30 text-red-400'
-                                                        : 'bg-yellow-900/30 text-yellow-400'
+                                                        ? 'bg-red-900/40 text-red-400 border border-red-500/50'
+                                                        : 'bg-gray-700/40 text-gray-300 border border-gray-500/50'
                                                 }`}>
                                                     {execution.status === 'SUCCESS' && '✓'}
                                                     {execution.status === 'FAILED' && '✗'}
-                                                    {execution.status === 'RUNNING' && '⟳'}
-                                                    {execution.status !== 'SUCCESS' && execution.status !== 'FAILED' && execution.status !== 'RUNNING' && '⚠'}
-                                                    {execution.status}
+                                                    {execution.status === 'RUNNING' && '⚠'}
+                                                    {execution.status !== 'SUCCESS' && execution.status !== 'FAILED' && execution.status !== 'RUNNING' && '•'}
+                                                    {execution.status === 'SUCCESS' ? 'Solved' : execution.status === 'RUNNING' ? 'Unsolved' : execution.status === 'FAILED' ? 'Failed' : execution.status}
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 text-sm">
-                                                <span className={`inline-block px-3 py-1 rounded font-semibold ${
+                                                <span className={`inline-block px-4 py-1 rounded font-semibold ${
                                                     execution.agentDecision === 'TRIVIAL_SOLVED_BY_AI'
-                                                        ? 'bg-blue-900/30 text-blue-400'
-                                                        : 'bg-orange-900/30 text-orange-400'
+                                                        ? 'bg-blue-900/40 text-blue-300 border border-blue-500/50'
+                                                        : 'bg-orange-900/40 text-orange-300 border border-orange-500/50'
                                                 }`}>
                                                     {execution.agentDecision === 'TRIVIAL_SOLVED_BY_AI' ? 'TRIVIAL' : 'COMPLEX'}
                                                 </span>

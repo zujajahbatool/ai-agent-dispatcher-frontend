@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
                             }
                         }
                     },
-                    duration: 120000,
+                    duration: 120,
                 },
                 {
                     id: 'exec-2',
@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
                             }
                         }
                     },
-                    duration: 145000,
+                    duration: 145,
                 },
                 {
                     id: 'exec-4',
@@ -83,7 +83,7 @@ export async function GET(request: NextRequest) {
                             }
                         }
                     },
-                    duration: 1800000,
+                    duration: 1800,
                 },
                 {
                     id: 'exec-5',
@@ -98,7 +98,7 @@ export async function GET(request: NextRequest) {
                             }
                         }
                     },
-                    duration: 280000,
+                    duration: 280,
                 },
                 {
                     id: 'exec-6',
