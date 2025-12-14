@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
         console.log('Fetching from Kestra:', kestraUrl);
 
         // Try to fetch real data from Kestra
-        let realData = null;
+        let realExecutions = [];
         try {
             const response = await fetch(kestraUrl, {
                 headers: {
@@ -36,17 +36,17 @@ export async function GET(request: NextRequest) {
             });
 
             if (response.ok) {
-                realData = await response.json();
-                console.log('✅ Successfully fetched real Kestra data:', realData.results?.length, 'executions');
-                return NextResponse.json(realData);
+                const realData = await response.json();
+                realExecutions = realData.results || [];
+                console.log('✅ Successfully fetched real Kestra data:', realExecutions.length, 'executions');
             } else {
-                console.warn(`Kestra API returned status ${response.status}, falling back to mock data`);
+                console.warn(`Kestra API returned status ${response.status}, will use mock data alongside real data`);
             }
         } catch (fetchError) {
-            console.warn('Failed to fetch from Kestra, using mock data:', fetchError);
+            console.warn('Failed to fetch from Kestra, will use mock data:', fetchError);
         }
 
-        // Fallback mock data for demonstration
+        // Mock data for demonstration
         const mockData = {
             results: [
                 {
@@ -143,8 +143,13 @@ export async function GET(request: NextRequest) {
             total: 6
         };
 
-        console.log('✅ Success! Retrieved', mockData.results.length, 'executions');
-        return NextResponse.json(mockData);
+        // Merge mock data with real Kestra executions
+        // Real executions go first, then mock data
+        const mergedResults = [...realExecutions, ...mockData.results];
+        const mergedTotal = mergedResults.length;
+
+        console.log('✅ Success! Retrieved', mockData.results.length, 'mock executions and', realExecutions.length, 'real executions');
+        return NextResponse.json({ results: mergedResults, total: mergedTotal });
 
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';

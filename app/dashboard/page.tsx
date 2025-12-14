@@ -7,6 +7,7 @@ interface Execution {
     status: string;
     agentDecision: string;
     executionTime: string;
+    isRealExecution?: boolean;
 }
 
 interface Counts {
@@ -37,34 +38,53 @@ export default function DashboardPage() {
                 let failedCount = 0;
 
                 const processedExecutions = results.map((execution: any, index: number) => {
-                    // Get the decision from outputs if available
-                    const decision = execution.outputs?.analyze_and_dispatch?.vars?.decision || 'PENDING';
-                    const status = execution.state?.current || 'UNKNOWN';
+                    // Check if this is a real Kestra execution by looking at its structure
+                    // Real executions from Kestra have outputs.analyze_and_dispatch, mock data has it too but we can distinguish
+                    const isReal = !execution.id.startsWith('exec-');
                     
-                    // Map Kestra states to display states
-                    let displayStatus = status;
-                    if (status === 'SUCCESS' && decision === 'PENDING') {
-                        displayStatus = 'PENDING';
-                    } else if (status === 'RUNNING') {
-                        displayStatus = 'PENDING';
-                    }
-                    
-                    // Count executions by decision type
-                    if (decision === 'TRIVIAL_SOLVED_BY_AI') trivialCount++;
-                    else if (decision === 'COMPLEX_REQUIRES_HUMAN') complexCount++;
-                    
-                    // Count failed executions
-                    if (status === 'FAILED') failedCount++;
+                    if (isReal) {
+                        // Real Kestra execution - show "pending" status and "human needed" decision
+                        const executionDuration = execution.duration || 0;
+                        // Convert duration from milliseconds to seconds
+                        const durationInSeconds = (executionDuration / 1000).toFixed(2);
+                        
+                        return {
+                            id: execution.id,
+                            title: execution.id, // Use actual execution ID as PR title
+                            status: 'pending', // Always show as pending for real executions
+                            agentDecision: 'human needed', // Always show as human needed for real executions
+                            executionTime: `${durationInSeconds}s`, // Exact time from Kestra
+                            isRealExecution: true,
+                        };
+                    } else {
+                        // Mock data - use the original logic
+                        const decision = execution.outputs?.analyze_and_dispatch?.vars?.decision || 'PENDING';
+                        const status = execution.state?.current || 'UNKNOWN';
+                        
+                        // Map Kestra states to display states
+                        let displayStatus = status;
+                        if (status === 'SUCCESS' && decision === 'PENDING') {
+                            displayStatus = 'PENDING';
+                        } else if (status === 'RUNNING') {
+                            displayStatus = 'PENDING';
+                        }
+                        
+                        // Count executions by decision type
+                        if (decision === 'TRIVIAL_SOLVED_BY_AI') trivialCount++;
+                        else if (decision === 'COMPLEX_REQUIRES_HUMAN') complexCount++;
+                        
+                        // Count failed executions
+                        if (status === 'FAILED') failedCount++;
 
-                    return {
-                        id: execution.id,
-                        title: `PR #${execution.taskRunAttempts?.[0]?.taskId || index + 1}`,
-                        status: displayStatus,
-                        agentDecision: decision,
-                        executionTime: execution.duration ? `${(execution.duration / 1000).toFixed(2)}s` : '0s',
-                        flowId: execution.flowId || 'unknown',
-                        namespace: execution.namespace || 'dev',
-                    };
+                        return {
+                            id: execution.id,
+                            title: `[${index + 1}] ${execution.id}`,
+                            status: displayStatus,
+                            agentDecision: decision,
+                            executionTime: execution.duration ? `${(execution.duration / 1000).toFixed(2)}s` : '0s',
+                            isRealExecution: false,
+                        };
+                    }
                 });
 
                 setExecutions(processedExecutions);
@@ -226,33 +246,34 @@ export default function DashboardPage() {
                                 <tbody>
                                     {filteredExecutions.map((execution) => (
                                         <tr key={execution.id} className="border-b border-gray-700/50 hover:bg-gray-800/30 transition-colors">
-                                            <td className="px-6 py-4 text-sm text-gray-300">{execution.title}</td>
+                                            <td className="px-6 py-4 text-sm text-gray-300">
+                                                {execution.title}
+                                                {execution.isRealExecution && <span className="ml-2 text-xs bg-cyan-900/40 text-cyan-300 px-2 py-1 rounded">🔴 LIVE</span>}
+                                            </td>
                                             <td className="px-6 py-4 text-sm">
                                                 <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full font-semibold ${
-                                                    execution.status === 'SUCCESS'
+                                                    execution.status.toLowerCase() === 'success'
                                                         ? 'bg-green-900/40 text-green-400 border border-green-500/50'
-                                                        : execution.status === 'PENDING' || execution.status === 'RUNNING'
+                                                        : execution.status.toLowerCase() === 'pending' || execution.status.toLowerCase() === 'running'
                                                         ? 'bg-blue-900/40 text-blue-400 border border-blue-500/50'
-                                                        : execution.status === 'FAILED'
+                                                        : execution.status.toLowerCase() === 'failed'
                                                         ? 'bg-red-900/40 text-red-400 border border-red-500/50'
                                                         : 'bg-gray-700/40 text-gray-300 border border-gray-500/50'
                                                 }`}>
-                                                    {execution.status === 'SUCCESS' && '✓'}
-                                                    {execution.status === 'FAILED' && '✗'}
-                                                    {(execution.status === 'PENDING' || execution.status === 'RUNNING') && '⏳'}
-                                                    {execution.status !== 'SUCCESS' && execution.status !== 'FAILED' && execution.status !== 'PENDING' && execution.status !== 'RUNNING' && '•'}
-                                                    {execution.status === 'SUCCESS' ? 'Solved' : execution.status === 'PENDING' ? 'Pending' : execution.status === 'RUNNING' ? 'Pending' : execution.status === 'FAILED' ? 'Failed' : execution.status}
+                                                    {execution.status.toLowerCase() === 'success' && '✓'}
+                                                    {execution.status.toLowerCase() === 'failed' && '✗'}
+                                                    {(execution.status.toLowerCase() === 'pending' || execution.status.toLowerCase() === 'running') && '⏳'}
+                                                    {execution.status.toLowerCase() !== 'success' && execution.status.toLowerCase() !== 'failed' && execution.status.toLowerCase() !== 'pending' && execution.status.toLowerCase() !== 'running' && '•'}
+                                                    {execution.status.charAt(0).toUpperCase() + execution.status.slice(1)}
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 text-sm">
                                                 <span className={`inline-block px-4 py-1 rounded font-semibold ${
-                                                    execution.agentDecision === 'TRIVIAL_SOLVED_BY_AI'
+                                                    execution.agentDecision.toLowerCase().includes('trivial') || execution.agentDecision.toLowerCase().includes('ai')
                                                         ? 'bg-blue-900/40 text-blue-300 border border-blue-500/50'
-                                                        : execution.agentDecision === 'COMPLEX_REQUIRES_HUMAN'
-                                                        ? 'bg-orange-900/40 text-orange-300 border border-orange-500/50'
-                                                        : 'bg-gray-700/40 text-gray-300 border border-gray-500/50'
+                                                        : 'bg-orange-900/40 text-orange-300 border border-orange-500/50'
                                                 }`}>
-                                                    {execution.agentDecision === 'TRIVIAL_SOLVED_BY_AI' ? 'TRIVIAL' : execution.agentDecision === 'COMPLEX_REQUIRES_HUMAN' ? 'COMPLEX' : 'PENDING'}
+                                                    {execution.agentDecision.toUpperCase().includes('TRIVIAL') ? 'TRIVIAL' : 'HUMAN NEEDED'}
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 text-sm text-gray-300">{execution.executionTime}</td>
