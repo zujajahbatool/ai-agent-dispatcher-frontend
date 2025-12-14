@@ -44,16 +44,51 @@ export default function DashboardPage() {
                     
                     if (isReal) {
                         // Real Kestra execution - show "pending" status and "human needed" decision
-                        const executionDuration = execution.duration || 0;
-                        // Convert duration from milliseconds to seconds
-                        const durationInSeconds = (executionDuration / 1000).toFixed(2);
+                        // Calculate actual execution time from startDate and endDate
+                        let executionTime = '0s';
+                        
+                        if (execution.startDate && execution.endDate) {
+                            // Both start and end dates available
+                            const startTime = new Date(execution.startDate).getTime();
+                            const endTime = new Date(execution.endDate).getTime();
+                            const durationMs = endTime - startTime;
+                            
+                            // Format duration based on size
+                            if (durationMs < 1000) {
+                                executionTime = `${durationMs}ms`;
+                            } else {
+                                const durationSec = (durationMs / 1000).toFixed(2);
+                                executionTime = `${durationSec}s`;
+                            }
+                        } else if (execution.startDate) {
+                            // Only start date, execution still running
+                            const startTime = new Date(execution.startDate).getTime();
+                            const currentTime = new Date().getTime();
+                            const durationMs = currentTime - startTime;
+                            
+                            if (durationMs < 1000) {
+                                executionTime = `${durationMs}ms`;
+                            } else {
+                                const durationSec = (durationMs / 1000).toFixed(2);
+                                executionTime = `${durationSec}s`;
+                            }
+                        } else if (execution.duration) {
+                            // Fallback to duration field if available
+                            const durationMs = execution.duration;
+                            if (durationMs < 1000) {
+                                executionTime = `${durationMs}ms`;
+                            } else {
+                                const durationSec = (durationMs / 1000).toFixed(2);
+                                executionTime = `${durationSec}s`;
+                            }
+                        }
                         
                         return {
                             id: execution.id,
                             title: execution.id, // Use actual execution ID as PR title
                             status: 'pending', // Always show as pending for real executions
                             agentDecision: 'human needed', // Always show as human needed for real executions
-                            executionTime: `${durationInSeconds}s`, // Exact time from Kestra
+                            executionTime: executionTime, // Real execution time from Kestra
                             isRealExecution: true,
                         };
                     } else {
