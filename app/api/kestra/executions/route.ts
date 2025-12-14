@@ -12,8 +12,10 @@ export async function GET(request: NextRequest) {
         const username = process.env.NEXT_PUBLIC_KESTRA_USERNAME;
         const password = process.env.NEXT_PUBLIC_KESTRA_PASSWORD;
         const kestraBaseUrl = process.env.NEXT_PUBLIC_KESTRA_URL || process.env.KESTRA_URL || 'http://localhost:8080';
+        
         if (!username || !password) {
-            return NextResponse.json({ error: 'Kestra credentials not configured' }, { status: 500 });
+            console.warn('Kestra credentials not configured, returning empty data');
+            return NextResponse.json({ results: [], total: 0 });
         }
         const encodedAuth = Buffer.from(`${username}:${password}`).toString('base64');
 
@@ -22,7 +24,29 @@ export async function GET(request: NextRequest) {
 
         console.log('Fetching from Kestra:', kestraUrl);
 
-        // Mock data for demonstration
+        // Try to fetch real data from Kestra
+        let realData = null;
+        try {
+            const response = await fetch(kestraUrl, {
+                headers: {
+                    'Authorization': `Basic ${encodedAuth}`,
+                    'Content-Type': 'application/json'
+                },
+                method: 'GET',
+            });
+
+            if (response.ok) {
+                realData = await response.json();
+                console.log('✅ Successfully fetched real Kestra data:', realData.results?.length, 'executions');
+                return NextResponse.json(realData);
+            } else {
+                console.warn(`Kestra API returned status ${response.status}, falling back to mock data`);
+            }
+        } catch (fetchError) {
+            console.warn('Failed to fetch from Kestra, using mock data:', fetchError);
+        }
+
+        // Fallback mock data for demonstration
         const mockData = {
             results: [
                 {

@@ -36,29 +36,34 @@ export default function DashboardPage() {
                 let complexCount = 0;
                 let failedCount = 0;
 
-                const prTitles = [
-                    'fix: minor typo in readme',
-                    'feat: add user authentication',
-                    'chore: update dependencies',
-                    'refactor: optimize image loading',
-                    'docs: add API documentation',
-                    'feat: dark mode support'
-                ];
-
                 const processedExecutions = results.map((execution: any, index: number) => {
+                    // Get the decision from outputs if available
                     const decision = execution.outputs?.analyze_and_dispatch?.vars?.decision || 'PENDING';
                     const status = execution.state?.current || 'UNKNOWN';
                     
+                    // Map Kestra states to display states
+                    let displayStatus = status;
+                    if (status === 'SUCCESS' && decision === 'PENDING') {
+                        displayStatus = 'PENDING';
+                    } else if (status === 'RUNNING') {
+                        displayStatus = 'PENDING';
+                    }
+                    
+                    // Count executions by decision type
                     if (decision === 'TRIVIAL_SOLVED_BY_AI') trivialCount++;
                     else if (decision === 'COMPLEX_REQUIRES_HUMAN') complexCount++;
+                    
+                    // Count failed executions
                     if (status === 'FAILED') failedCount++;
 
                     return {
                         id: execution.id,
-                        title: `[${index + 1}] ${prTitles[index % 6]}`,
-                        status: status,
+                        title: `PR #${execution.taskRunAttempts?.[0]?.taskId || index + 1}`,
+                        status: displayStatus,
                         agentDecision: decision,
-                        executionTime: execution.duration ? `${execution.duration}ms` : '0ms',
+                        executionTime: execution.duration ? `${(execution.duration / 1000).toFixed(2)}s` : '0s',
+                        flowId: execution.flowId || 'unknown',
+                        namespace: execution.namespace || 'dev',
                     };
                 });
 
@@ -70,14 +75,15 @@ export default function DashboardPage() {
                     failed: failedCount,
                 });
                 setFilteredExecutions(processedExecutions);
+                setLoading(false);
             } catch (error) {
                 console.error('Error fetching data:', error);
-            } finally {
                 setLoading(false);
             }
         }
 
         fetchData();
+        // Refresh every 5 seconds to get real-time updates
         const interval = setInterval(fetchData, 5000);
         return () => clearInterval(interval);
     }, []);
@@ -225,26 +231,28 @@ export default function DashboardPage() {
                                                 <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full font-semibold ${
                                                     execution.status === 'SUCCESS'
                                                         ? 'bg-green-900/40 text-green-400 border border-green-500/50'
-                                                        : execution.status === 'RUNNING'
-                                                        ? 'bg-yellow-900/40 text-yellow-400 border border-yellow-500/50'
+                                                        : execution.status === 'PENDING' || execution.status === 'RUNNING'
+                                                        ? 'bg-blue-900/40 text-blue-400 border border-blue-500/50'
                                                         : execution.status === 'FAILED'
                                                         ? 'bg-red-900/40 text-red-400 border border-red-500/50'
                                                         : 'bg-gray-700/40 text-gray-300 border border-gray-500/50'
                                                 }`}>
                                                     {execution.status === 'SUCCESS' && '✓'}
                                                     {execution.status === 'FAILED' && '✗'}
-                                                    {execution.status === 'RUNNING' && '⚠'}
-                                                    {execution.status !== 'SUCCESS' && execution.status !== 'FAILED' && execution.status !== 'RUNNING' && '•'}
-                                                    {execution.status === 'SUCCESS' ? 'Solved' : execution.status === 'RUNNING' ? 'Unsolved' : execution.status === 'FAILED' ? 'Failed' : execution.status}
+                                                    {(execution.status === 'PENDING' || execution.status === 'RUNNING') && '⏳'}
+                                                    {execution.status !== 'SUCCESS' && execution.status !== 'FAILED' && execution.status !== 'PENDING' && execution.status !== 'RUNNING' && '•'}
+                                                    {execution.status === 'SUCCESS' ? 'Solved' : execution.status === 'PENDING' ? 'Pending' : execution.status === 'RUNNING' ? 'Pending' : execution.status === 'FAILED' ? 'Failed' : execution.status}
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 text-sm">
                                                 <span className={`inline-block px-4 py-1 rounded font-semibold ${
                                                     execution.agentDecision === 'TRIVIAL_SOLVED_BY_AI'
                                                         ? 'bg-blue-900/40 text-blue-300 border border-blue-500/50'
-                                                        : 'bg-orange-900/40 text-orange-300 border border-orange-500/50'
+                                                        : execution.agentDecision === 'COMPLEX_REQUIRES_HUMAN'
+                                                        ? 'bg-orange-900/40 text-orange-300 border border-orange-500/50'
+                                                        : 'bg-gray-700/40 text-gray-300 border border-gray-500/50'
                                                 }`}>
-                                                    {execution.agentDecision === 'TRIVIAL_SOLVED_BY_AI' ? 'TRIVIAL' : 'COMPLEX'}
+                                                    {execution.agentDecision === 'TRIVIAL_SOLVED_BY_AI' ? 'TRIVIAL' : execution.agentDecision === 'COMPLEX_REQUIRES_HUMAN' ? 'COMPLEX' : 'PENDING'}
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 text-sm text-gray-300">{execution.executionTime}</td>
